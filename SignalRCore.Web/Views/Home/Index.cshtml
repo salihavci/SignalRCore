@@ -1,0 +1,109 @@
+﻿@{
+    ViewData["Title"] = "Home Page";
+}
+
+@section Styles
+    {
+    <link href="~/toastr.js/toastr.min.css" rel="stylesheet" />
+}
+
+    @section Scripts
+    {
+    <script src="~/toastr.js/toastr.min.js"></script>
+    <script src="~/microsoft/signalr/dist/browser/signalr.min.js"></script>
+    <script type="text/javascript">
+        $(document).ready(() => {
+            var connection = new signalR.HubConnectionBuilder()
+                .configureLogging(signalR.LogLevel.Information)
+                .withAutomaticReconnect([1000, 1000, 3000, 3000])
+                .withUrl("https://localhost:5001/MyHub")
+                .build();
+
+            statusShow();
+            start();
+
+            function start()
+            {
+                connection.start().then(() => {
+                    statusShow();
+                    $("#loading").hide();
+                }).catch((err) => {
+                    toastr.error(err);
+                    setTimeout(() => start() , 2000);
+                });
+            }
+
+            function statusShow(){
+                $("#connectionStatus").text(connection.state);
+            }
+
+            connection.onreconnecting((err)=> {
+                $("#loading").show();
+                statusShow();
+                toastr.error(`onReconnection Error : ${err}`);
+            });
+
+            connection.onreconnected((connectionId) => {
+                $("#loading").hide();
+                statusShow();
+                toastr.success(`onReconnected connectionId : ${connectionId}`);
+            });
+
+            connection.onclose(()=> {
+                $("#loading").hide();
+                statusShow();
+                toastr.warning(`Closed Connection`);
+                start();
+            });
+
+            connection.on("ReceiveOnlineCount",(data) => {
+                $("#onlineCount").text(data);
+            });
+            
+            connection.on("ReceiveName", (data) => {
+                toastr.success(`Name : ${data}`);
+                $("#nameList").append(`<li class='list-group-item'>${data}</li>`);
+            });
+            
+            connection.on("Notify",(data)=> {
+                $("#notify").html(`<div class="alert alert-success">${data}</div>`);
+            });
+
+            $("#btnSave").click(() => {
+                connection.invoke("SendName", $("#txtName").val()).catch((err) => {
+                    toastr.error(err);
+                });
+            });
+
+        });
+    </script>
+
+    <script src="~/js/toastr-options.js"></script>
+}
+    <div class="row">
+        <div class="col-8 offset-2">
+            <div class="form-group">
+                <input class="form-control" type="text" id="txtName" />
+            </div>
+            <div class="form-group">
+                <button class="btn btn-primary" id="btnSave">İsim Kaydet</button>
+            </div>
+            <div class="alert alert-info">
+                <div class="float-left">
+                    Bağlantı durumu : <strong id="connectionStatus"></strong>
+                    ,Online kişi sayısı : <strong id="onlineCount"></strong>
+                </div>
+                <div class="float-right">
+                    <div id="loading" class="spinner-border text-primary" role="status">
+                        <span class="sr-only">Loading...</span>
+                    </div>
+                </div>
+                <div class="clearfix"></div>
+            </div>
+            <div id="notify"></div>
+        </div>
+        <div class="col-8 offset-2">
+            <ul id="nameList" class="list-group">
+            </ul>
+        </div>
+    </div>

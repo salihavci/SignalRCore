@@ -1,0 +1,12 @@
+{
+  "ServerUri": "http://localhost:9000/",
+  "Organization": null,
+  "ProjectKey": "SignalRCore",
+  "ProjectName": "SignalRCore",
+  "Profiles": {
+    "CSharp": {
+      "ProfileKey": "AYNrrqKMOEEJT4OWWeUa",
+      "ProfileTimestamp": "2022-09-23T18:49:10Z"
+    }
+  }
+}
