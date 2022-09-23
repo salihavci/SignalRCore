@@ -23,6 +23,6 @@ namespace SignalRCore.API.Controllers
             await _hubContext.Clients.All.SendAsync("Notify",$"Arkadaşlar takım {teamCount} kişi olacaktır.").ConfigureAwait(false);
             return this.Ok();
         }
-        //734bc0a64ae89563cb0fe175f48be8706539df82 => Sonarqube SignalRCore2 Token
+        //762acfb7c0b4c5e6c9aef435af261fb5869e82c1 => Sonarqube SignalRCore2 Token
     }
 }
