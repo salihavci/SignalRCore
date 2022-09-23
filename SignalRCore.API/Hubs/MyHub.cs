@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.SignalR;
+﻿using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.SignalR;
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
@@ -9,10 +10,18 @@ namespace SignalRCore.API.Hubs
     {
         public static List<string> Names { get; set; } = new List<string>();
         public static int OnlineCounter { get; set; } = 0;
+        public static int TeamCounter { get; set; } = 7;
         public async Task SendName(string name)
         {
-            Names.Add(name);
-            await Clients.All.SendAsync("ReceiveName", name).ConfigureAwait(false); //İlk parametre metot ismi, diğer parametreler argümanda gidecek datalar.
+            if(Names.Count >= TeamCounter)
+            {
+                await Clients.Caller.SendAsync("Error",$"Takım en fazla {TeamCounter} kişi olabilir.");
+            }
+            else
+            {
+                Names.Add(name);
+                await Clients.All.SendAsync("ReceiveName", name).ConfigureAwait(false); //İlk parametre metot ismi, diğer parametreler argümanda gidecek datalar.
+            }
         }
         public async Task GetNames()
         {

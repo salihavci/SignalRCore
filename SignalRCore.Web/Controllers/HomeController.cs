@@ -20,6 +20,7 @@ namespace SignalRCore.Web.Controllers
 
         public IActionResult Index()
         {
+            _logger.LogInformation("Deneme");
             return View();
         }
 

@@ -20,6 +20,7 @@ namespace SignalRCore.API.Controllers
         [HttpGet("{teamCount}")]
         public async Task<IActionResult> SetTeamCount(int teamCount)
         {
+            MyHub.TeamCounter = teamCount;
             await _hubContext.Clients.All.SendAsync("Notify",$"Arkadaşlar takım {teamCount} kişi olacaktır.").ConfigureAwait(false);
             return this.Ok();
         }

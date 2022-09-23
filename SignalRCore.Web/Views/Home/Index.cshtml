@@ -22,11 +22,16 @@
             statusShow();
             start();
 
+            function initialize(){
+                connection.invoke("GetNames");
+            }
+
             function start()
             {
                 connection.start().then(() => {
                     statusShow();
                     $("#loading").hide();
+                    initialize();
                 }).catch((err) => {
                     toastr.error(err);
                     setTimeout(() => start() , 2000);
@@ -67,6 +72,18 @@
             
             connection.on("Notify",(data)=> {
                 $("#notify").html(`<div class="alert alert-success">${data}</div>`);
+            });
+
+            connection.on("Error",(data)=>{
+                $("#notify").html(`<div class="alert alert-success">${data}</div>`);
+                toastr.warning(data);
+            });
+            
+            connection.on("ReceiveNames",(data)=> {
+                $("#nameList").empty();
+                data.forEach((item,index)=>{
+                    $("#nameList").append(`<li class="list-group-item">${item}</li>`);
+                })
             });
 
             $("#btnSave").click(() => {
