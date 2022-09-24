@@ -21,9 +21,17 @@ namespace SignalRCore.API.Controllers
         public async Task<IActionResult> SetTeamCount(int teamCount)
         {
             MyHub.TeamCounter = teamCount;
-            await _hubContext.Clients.All.SendAsync("Notify",$"Arkadaşlar takım {teamCount} kişi olacaktır.").ConfigureAwait(false);
+            await _hubContext.Clients.All.SendAsync("Notify", $"Arkadaşlar takım {teamCount} kişi olacaktır.").ConfigureAwait(false);
             return this.Ok();
         }
         //762acfb7c0b4c5e6c9aef435af261fb5869e82c1 => Sonarqube SignalRCore2 Token
+
+        /*
+         dotnet sonarscanner begin /k:"SignalRCore" /d:sonar.host.url="http://localhost:9000"  /d:sonar.login="762acfb7c0b4c5e6c9aef435af261fb5869e82c1"
+ 
+        dotnet build
+ 
+        dotnet sonarscanner end /d:sonar.login="762acfb7c0b4c5e6c9aef435af261fb5869e82c1"
+        */ //Sonarqube Command
     }
 }
