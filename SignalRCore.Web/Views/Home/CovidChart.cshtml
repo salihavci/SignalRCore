@@ -1,0 +1,58 @@
+﻿@{
+    ViewData["Title"] = "CovidChart";
+}
+
+@section Styles{
+    <link href="~/toastr.js/toastr.min.css" rel="stylesheet" />
+}
+
+@section Scripts{
+    <script src="~/toastr.js/toastr.min.js"></script>
+    <script src="~/microsoft/signalr/dist/browser/signalr.min.js"></script>
+    <script src="~/js/toastr-options.js"></script>
+    <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
+    <script type="text/javascript">
+        $(document).ready(() => {
+            var covidChartList = new Array();
+            covidChartList.push(["Tarih", "Istanbul", "Ankara", "Izmir", "Bursa", "Adana"]);
+
+            var connection = new signalR.HubConnectionBuilder()
+                .configureLogging(signalR.LogLevel.Information)
+                .withAutomaticReconnect([1000, 1000, 3000, 3000])
+                .withUrl("https://localhost:5001/MyHub")
+                .build();
+
+            connection.start().then(() => {
+                toastr.success(connection.state);
+                connection.invoke("GetCovidList");
+            }).catch((err) => {
+                toastr.error(err);
+            });
+
+            connection.on("ReceiveCovidList", (list) => {
+                covidChartList = covidChartList.splice(0, 1); //Bu arraydaki sadece ilk index değerini alır diğerlerini temizlemiş olur.
+                list.forEach((item, index) => {
+                    covidChartList.push([item.covidDate, item.counts[0], item.counts[1], item.counts[2], item.counts[3], item.counts[4]])
+                });
+                google.charts.load('current', { 'packages': ['corechart'] });
+                google.charts.setOnLoadCallback(drawChart);
+            });
+
+            function drawChart() {
+                var data = google.visualization.arrayToDataTable(covidChartList);
+
+                var options = {
+                    title: 'Covid19 SignalR Chart',
+                    curveType: 'function', //Eğer none verilirse düz çizgi görülür. Kırılım kıvrılması olmaz.
+                    legend: { position: 'bottom' }
+                };
+
+                var chart = new google.visualization.LineChart(document.getElementById('curve_chart'));
+
+                chart.draw(data, options);
+            }
+        });
+    </script>
+}
+
+    <div id="curve_chart" style="width: 900px; height: 500px"></div>
