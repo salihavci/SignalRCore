@@ -1,0 +1,34 @@
+﻿@{
+    ViewData["Title"] = "Blog";
+}
+
+@section Styles{
+    <link href="~/toastr.js/toastr.min.css" rel="stylesheet" />
+}
+
+@section Scripts{
+    <script src="~/toastr.js/toastr.min.js"></script>
+    <script src="~/microsoft/signalr/dist/browser/signalr.min.js"></script>
+    <script src="~/js/toastr-options.js"></script>
+    <script type="text/javascript">
+        $(document).ready(() => {
+            var connection = new signalR.HubConnectionBuilder()
+                .configureLogging(signalR.LogLevel.Information)
+                .withAutomaticReconnect([1000, 1000, 3000, 3000])
+                .withUrl("/MyHub")
+                .build();
+
+            connection.start().then(() => {
+                toastr.success(connection.state);
+                connection.invoke("SendMessage", "Hello World");
+            }).catch((err) => {
+                toastr.error(err);
+            });
+
+            connection.on("ReceiveMessage", (message) => {
+                toastr.success(message);
+            });
+        });
+    </script>
+}
+

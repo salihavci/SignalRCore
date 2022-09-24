@@ -3,14 +3,15 @@
 }
 
 @section Styles
-    {
+{
     <link href="~/toastr.js/toastr.min.css" rel="stylesheet" />
 }
 
-    @section Scripts
-    {
+@section Scripts
+{
     <script src="~/toastr.js/toastr.min.js"></script>
     <script src="~/microsoft/signalr/dist/browser/signalr.min.js"></script>
+    <script src="~/js/toastr-options.js"></script>
     <script type="text/javascript">
         $(document).ready(() => {
             var connection = new signalR.HubConnectionBuilder()
@@ -22,27 +23,27 @@
             statusShow();
             start();
 
-            function initialize(){
+            function initialize() {
                 connection.invoke("GetNames");
+                connection.invoke("GetNamesByGroup");
             }
 
-            function start()
-            {
+            function start() {
                 connection.start().then(() => {
                     statusShow();
                     $("#loading").hide();
                     initialize();
                 }).catch((err) => {
                     toastr.error(err);
-                    setTimeout(() => start() , 2000);
+                    setTimeout(() => start(), 2000);
                 });
             }
 
-            function statusShow(){
+            function statusShow() {
                 $("#connectionStatus").text(connection.state);
             }
 
-            connection.onreconnecting((err)=> {
+            connection.onreconnecting((err) => {
                 $("#loading").show();
                 statusShow();
                 toastr.error(`onReconnection Error : ${err}`);
@@ -54,36 +55,47 @@
                 toastr.success(`onReconnected connectionId : ${connectionId}`);
             });
 
-            connection.onclose(()=> {
+            connection.onclose(() => {
                 $("#loading").hide();
                 statusShow();
                 toastr.warning(`Closed Connection`);
                 start();
             });
 
-            connection.on("ReceiveOnlineCount",(data) => {
+            connection.on("ReceiveOnlineCount", (data) => {
                 $("#onlineCount").text(data);
             });
-            
+
             connection.on("ReceiveName", (data) => {
                 toastr.success(`Name : ${data}`);
                 $("#nameList").append(`<li class='list-group-item'>${data}</li>`);
             });
-            
-            connection.on("Notify",(data)=> {
+
+            connection.on("Notify", (data) => {
                 $("#notify").html(`<div class="alert alert-success">${data}</div>`);
             });
 
-            connection.on("Error",(data)=>{
+            connection.on("Error", (data) => {
                 $("#notify").html(`<div class="alert alert-success">${data}</div>`);
                 toastr.warning(data);
             });
-            
-            connection.on("ReceiveNames",(data)=> {
+
+            connection.on("ReceiveNames", (data) => {
                 $("#nameList").empty();
-                data.forEach((item,index)=>{
+                data.forEach((item, index) => {
                     $("#nameList").append(`<li class="list-group-item">${item}</li>`);
                 })
+            });
+
+            connection.on("ReceiveMessageByGroup", (name, teamId) => {
+                let listName;
+                if (teamId == 1) {
+                    listName = "ATeamList";
+                }
+                else {
+                    listName = "BTeamList";
+                }
+                $(`#${listName}`).append(`<li class="list-group-item">${name}</li>`);
             });
 
             $("#btnSave").click(() => {
@@ -92,10 +104,64 @@
                 });
             });
 
+            $("#btnTeam").click(() => {
+                let name = $("#txtName").val();
+                let teamName = $("input[type=radio]:checked").val();
+                if (teamName == null) {
+                    toastr.error("Lütfen takım seçiniz.");
+                    return;
+                }
+                connection.invoke("SendNameByGroup", name, teamName).catch((err) => {
+                    toastr.error(err);
+                });
+            });
+
+            $("input[type=radio]").change(() => {
+                let value = $("input[type=radio]:checked").val();
+                if (value == "Team A") {
+                    connection.invoke("AddToGroup", value);
+                    connection.invoke("RemoveToGroup", "Team B");
+                }
+                else {
+                    connection.invoke("AddToGroup", value);
+                    connection.invoke("RemoveToGroup", "Team A");
+                }
+            });
+
+            connection.on("ReceiveNamesByGroup", (teams) => {
+                $("#ATeamList").empty();
+                $("#BTeamList").empty();
+                teams.forEach((item, index) => {
+
+                    let listName;
+                    if (item.teamId == 1) {
+                        listName = "ATeamList";
+                    }
+                    else {
+                        listName = "BTeamList";
+                    }
+                    item.users.forEach((data, userIndex) => {
+                        $(`#${listName}`).append(`<li class="list-group-item">${data.name}</li>`);
+                    });
+                });
+            });
+
+            $("#btnProduct").click(() => {
+                let product = {
+                    "Id": 1,
+                    "Name": "Kalem",
+                    "Price" : 100,
+                    "Stock" : 200
+                }
+                connection.invoke("SendProduct",product);
+            });
+        
+            connection.on("ReceiveProducts",(product) => {
+                console.log(product);
+            });
         });
     </script>
 
-    <script src="~/js/toastr-options.js"></script>
 }
     <div class="row">
         <div class="col-8 offset-2">
@@ -103,9 +169,21 @@
                 <input class="form-control" type="text" id="txtName" />
             </div>
             <div class="form-group">
-                <button class="btn btn-primary" id="btnSave">İsim Kaydet</button>
+                <div class="form-check form-check-inline">
+                    <input class="form-check-input" type="radio" name="TeamGroup" value="Team A" />
+                    <label class="form-check-label">A takımı</label>
+                </div>
+                <div class="form-check form-check-inline">
+                    <input class="form-check-input" type="radio" name="TeamGroup" value="Team B" />
+                    <label class="form-check-label">B takımı</label>
+                </div>
             </div>
-            <div class="alert alert-info">
+            <div class="form-group">
+                <button class="btn btn-primary" id="btnSave">İsim Kaydet</button>
+                <button class="btn btn-warning" id="btnTeam">Takıma İsim Kaydet</button>
+                <button class="btn btn-danger" id="btnProduct">Ürün Kaydet</button>
+            </div>
+            <div class="alert alert-info my-1">
                 <div class="float-left">
                     Bağlantı durumu : <strong id="connectionStatus"></strong>
                     ,Online kişi sayısı : <strong id="onlineCount"></strong>
@@ -120,7 +198,22 @@
             <div id="notify"></div>
         </div>
         <div class="col-8 offset-2">
-            <ul id="nameList" class="list-group">
-            </ul>
+            <div class="row my-1">
+                <div class="col-6">
+                    <h2>A Takımı</h2>
+                    <ul id="ATeamList" class="list-group"></ul>
+                </div>
+                <div class="col-6">
+                    <h2>B Takımı</h2>
+                    <ul id="BTeamList" class="list-group"></ul>
+                </div>
+            </div>
+            <div class="row my-1">
+                <div class="col-12">
+                    <h2>İsimler</h2>
+                    <ul id="nameList" class="list-group">
+                    </ul>
+                </div>
+            </div>
         </div>
     </div>
